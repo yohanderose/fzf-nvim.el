@@ -1110,6 +1110,32 @@ File name & Line extraction:
                     #'fzf--action-find-file))
     (error "projectile-project-root is not bound")))
 
+
+;; ---------------------------------------------------------------------------
+;;;###autoload
+(defun fzf-projectile-rg ()
+  "Start fzf at project root and search for a string."
+  (interactive)
+  (require 'projectile)
+  (let ((project-root (projectile-project-root)))
+    (unless project-root
+      (user-error "Not in a Projectile project"))
+    (let ((default-directory project-root)
+          (rg-command "rg --column --line-number --smart-case --hidden --follow ''"))
+      (fzf-with-command
+       rg-command
+       (lambda (selected)
+         (when selected
+           (let* ((parts (split-string selected ":"))
+                  (rel-file (car parts))
+                  (line (string-to-number (cadr parts)))
+                  (abs-file (expand-file-name rel-file project-root)))
+             (find-file abs-file)
+             (when (> line 0)
+               (goto-char (point-min))
+               (forward-line (1- line))))))
+       project-root))))
+
 ;; ---------------------------------------------------------------------------
 
 ;; test function
